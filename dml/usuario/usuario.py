@@ -4,7 +4,7 @@ import random
 from tqdm import tqdm
 import time
 
-def listar_productos_usuario(db):
+def listar_productos_usuario(db): #--tabla para ver los productos D:
     barra_carga("Cargando productos")
     productos = db["productos"]
     pipeline = [
@@ -26,14 +26,16 @@ def listar_productos_usuario(db):
     print("\n--- Lista de Productos ---")
     print(table)
 
-def generar_id_solicitud(reembolsos):
+def generar_id_solicitud(reembolsos):  #--ciclo random id_soli
     while True:
         numero = random.randint(1, 99)
         nuevo_id = f"A{numero:02d}"
         if not reembolsos.find_one({"id_solicitud": nuevo_id}):
             return nuevo_id
 
-def crear_solicitud(db, correo_usuario):
+
+
+def crear_solicitud(db, correo_usuario): 
     listar_productos_usuario(db)
     reembolsos = db["reembolsos"]
     productos = db["productos"]
@@ -48,13 +50,26 @@ def crear_solicitud(db, correo_usuario):
     id_solicitud = generar_id_solicitud(reembolsos)
     descripcion_fallo = input("Describa el fallo del producto: ").strip()
 
+    print("\nSeleccione el tipo de daño:")
+    for clave, valor in tipos_dano.items():
+        print(f"{clave}. {valor}")
+
+    tipo_dano = ""
+    while True:
+        opcion = input(f"Opción (1-{len(tipos_dano)}): ").strip()
+        if opcion in tipos_dano:
+            tipo_dano = tipos_dano[opcion]
+            break
+        else:
+            print("Opción inválida. Intente nuevamente.")
+
     opciones_pago = {"EFECTIVO", "DEBITO", "CREDITO"}
     while True:
         medio_pago = input("Ingrese medio de pago usado (Efectivo/Debito/Credito): ").strip().upper()
         if medio_pago in opciones_pago:
             break
         else:
-            print("Opción inválida debe ser efectivo, debito o credito")
+            print("Opción inválida. Debe ser EFECTIVO, DEBITO o CREDITO")
 
     costo_producto = producto.get("precio", 0)
     fecha_solicitud = datetime.now()
@@ -67,6 +82,7 @@ def crear_solicitud(db, correo_usuario):
         "id_producto": id_producto,
         "nombre": producto.get("nombre", ""),
         "descripcion_fallo": descripcion_fallo,
+        "tipo_dano": tipo_dano,
         "medio_pago": medio_pago,
         "costo_producto": costo_producto,
         "estado": "pendiente",
@@ -76,7 +92,9 @@ def crear_solicitud(db, correo_usuario):
     reembolsos.insert_one(nueva_solicitud)
     print(f"Solicitud de reembolso creada exitosamente con ID: {id_solicitud}")
 
-def listar_solicitudes_usuario(db, correo_usuario):
+
+
+def listar_solicitudes_usuario(db, correo_usuario):  # --tabla para ver las solis D:
     barra_carga("Buscando solicitudes")
     reembolsos = db["reembolsos"]
     pipeline = [
@@ -88,6 +106,7 @@ def listar_solicitudes_usuario(db, correo_usuario):
                 "id_producto": 1,
                 "nombre": 1,
                 "descripcion_fallo": 1,
+                "tipo_dano": 1,  
                 "costo_producto": 1,
                 "medio_pago": 1,
                 "estado": 1,
@@ -99,7 +118,17 @@ def listar_solicitudes_usuario(db, correo_usuario):
     solicitudes = reembolsos.aggregate(pipeline)
 
     table = PrettyTable()
-    table.field_names = ["ID Solicitud", "ID Producto", "Nombre", "Descripción Fallo", "Costo", "Medio Pago", "Estado", "Fecha Solicitud"]
+    table.field_names = [
+        "ID Solicitud",
+        "ID Producto",
+        "Nombre",
+        "Descripción Fallo",
+        "Tipo Daño",  
+        "Costo",
+        "Medio Pago",
+        "Estado",
+        "Fecha Solicitud"
+    ]
 
     for sol in solicitudes:
         fecha_str = sol.get("fecha_solicitud")
@@ -113,6 +142,7 @@ def listar_solicitudes_usuario(db, correo_usuario):
             sol.get("id_producto", "N/A"),
             sol.get("nombre", "N/A"),
             sol.get("descripcion_fallo", "N/A"),
+            sol.get("tipo_dano", "N/A"),  
             f"${sol.get('costo_producto', 0)}",
             sol.get("medio_pago", "N/A"),
             sol.get("estado", "N/A"),
@@ -122,7 +152,93 @@ def listar_solicitudes_usuario(db, correo_usuario):
     print("\n--- Mis Solicitudes de Reembolso ---")
     print(table)
 
+
+def ver_solicitudes_aceptadas(db, correo_usuario):  # --tabla para ver las solis aceptadas D:
+    reembolsos = db["reembolsos"]
+    barra_carga("Consultando solicitudes aceptadas")
+
+    pipeline = [
+        {
+            "$match": {
+                "correo_usuario": correo_usuario,
+                "estado": "aceptado"
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id_solicitud": 1,
+                "id_producto": 1,
+                "nombre": 1,
+                "descripcion_fallo": 1,
+                "tipo_dano": 1,  
+                "medio_pago": 1,
+                "costo_producto": 1,
+                "fecha_solicitud": 1
+            }
+        }
+    ]
+
+    resultados = reembolsos.aggregate(pipeline)
+
+    table = PrettyTable()
+    table.field_names = [
+        "ID Solicitud",
+        "ID Producto",
+        "Nombre",
+        "Fallo",
+        "Tipo Daño",  
+        "Medio Pago",
+        "Costo",
+        "Fecha"
+    ]
+
+    encontrados = False
+    for sol in resultados:
+        encontrados = True
+        fecha = sol.get("fecha_solicitud")
+        fecha_str = fecha.strftime("%Y-%m-%d") if fecha else "N/A"
+        table.add_row([
+            sol.get("id_solicitud", "N/A"),
+            sol.get("id_producto", "N/A"),
+            sol.get("nombre", "N/A"),
+            sol.get("descripcion_fallo", "N/A"),
+            sol.get("tipo_dano", "N/A"),  
+            sol.get("medio_pago", "N/A"),
+            f"${sol.get('costo_producto', 0)}",
+            fecha_str
+        ])
+
+    print("\n--- Solicitudes Aceptadas ---")
+    if encontrados:
+        print(table)
+    else:
+        print("No tienes solicitudes aceptadas aun")
+
+
+
+
 def barra_carga(texto="Procesando", pasos=100):
     tiempo_sleep = 2 / pasos 
     for _ in tqdm(range(pasos), desc=texto, ncols=70, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}'):
         time.sleep(tiempo_sleep)
+
+
+
+tipos_dano = { #--menu para tipo de dañoxd
+    "1": "Fallo eléctrico",
+    "2": "Daño físico",
+    "3": "No enciende",
+    "4": "Mal funcionamiento general",
+    "5": "Pantalla rota",
+    "6": "Problemas de batería",
+    "7": "Sobrecalentamiento",
+    "8": "Problemas de software",
+    "9": "Conectividad fallida",
+    "10": "Ruido anormal",
+    "11": "Fallo mecánico",
+    "12": "Desgaste por uso",
+    "13": "Daño por agua",
+    "14": "Botones dañados",
+    "15": "Problemas de cámara"
+}

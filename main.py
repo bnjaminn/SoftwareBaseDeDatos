@@ -7,8 +7,8 @@ from tqdm import tqdm
 import time
 from inicio_sesion import iniciar_sesion, registrar_cliente
 from menu import menu_principal, menu_administrador, menu_cliente
-from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis)
-from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, listar_productos_usuario)
+from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis, contar_por_medio_pago, ver_clientes_frecuentes)
+from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, ver_solicitudes_aceptadas)
 
 def main():
     db = obtener_conexion()
@@ -34,15 +34,7 @@ def main():
                     elif admin_opcion == "1":
                         listar_usuarios(db)
                     elif admin_opcion == "2":
-                        filtro = None
-                        filtro_opcional = input("¿Filtrar solicitudes? Escriba 1 para Mes, 2 para Producto o Enter para ver todas: ")
-                        if filtro_opcional == "1":
-                            mes = input("Ingrese mes y año (YYYY-MM): ")
-                            filtro = {"fecha": mes}
-                        elif filtro_opcional == "2":
-                            id_prod = input("Ingrese id_producto: ")
-                            filtro = {"id_producto": id_prod}
-                        ver_solicitudes(db, filtro)
+                        ver_solicitudes(db)
                     elif admin_opcion == "3":
                         id_solicitud = input("Ingrese id_solicitud para aceptar: ")
                         aceptar_solicitud(db, id_solicitud)
@@ -55,9 +47,13 @@ def main():
                     elif admin_opcion == "6":
                         contar_solis(db)
                     elif admin_opcion == "7":
+                        contar_por_medio_pago(db)
+                    elif admin_opcion == "8":
+                        ver_clientes_frecuentes(db)  
+                    elif admin_opcion == "9":
                         listar_productos_admin(db)
                     else:
-                        print("Opción inválida")
+                        print("Opcion inválida")
 
             #----------------opciones cliente-------------------------
             elif usuario["rol"] == "cliente":
@@ -72,9 +68,9 @@ def main():
                     elif cliente_opcion == "2":
                         listar_solicitudes_usuario(db, usuario["correo"])
                     elif cliente_opcion == "3":
-                        listar_productos_usuario(db)
+                        ver_solicitudes_aceptadas(db, usuario["correo"])
                     else:
-                        print("Opción inválida")
+                        print("Opcion inválida")
 
             else:
                 print("Rol no reconocido")
@@ -87,7 +83,7 @@ def main():
             break
 
         else:
-            print("Opción no válida.")
+            print("Opcion no válida.")
 
 if __name__ == "__main__":
     main()
