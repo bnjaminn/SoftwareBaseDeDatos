@@ -1,0 +1,93 @@
+#Integrantes: Benjamin Bravo, Carolina Olguin
+#Carrera: Analista Programador
+#Depedencias a instalar (IMPORTANTE INSTALAR POR FAVOR INSTALAR PARA CORRECTO FUNCIONAMIENTO): pip install pymongo, pip install prettytable, pip install tqdm
+from conexion import obtener_conexion
+from prettytable import PrettyTable
+from tqdm import tqdm
+import time
+from inicio_sesion import iniciar_sesion, registrar_cliente
+from menu import menu_principal, menu_administrador, menu_cliente
+from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis)
+from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, listar_productos_usuario)
+
+def main():
+    db = obtener_conexion()
+
+    while True:
+        menu_principal()
+        opcion = input("Elige una opción: ")
+
+        #----------------inicio opciones generales-------------------------
+        if opcion == "1":
+            usuario = iniciar_sesion(db)
+            if usuario is None:
+                continue
+
+            #----------------opciones administrador-------------------------
+            if usuario["rol"] == "administrador":
+                while True:
+                    menu_administrador()
+                    admin_opcion = input("Elige una opción: ")
+
+                    if admin_opcion == "0":
+                        break
+                    elif admin_opcion == "1":
+                        listar_usuarios(db)
+                    elif admin_opcion == "2":
+                        filtro = None
+                        filtro_opcional = input("¿Filtrar solicitudes? Escriba 1 para Mes, 2 para Producto o Enter para ver todas: ")
+                        if filtro_opcional == "1":
+                            mes = input("Ingrese mes y año (YYYY-MM): ")
+                            filtro = {"fecha": mes}
+                        elif filtro_opcional == "2":
+                            id_prod = input("Ingrese id_producto: ")
+                            filtro = {"id_producto": id_prod}
+                        ver_solicitudes(db, filtro)
+                    elif admin_opcion == "3":
+                        id_solicitud = input("Ingrese id_solicitud para aceptar: ")
+                        aceptar_solicitud(db, id_solicitud)
+                    elif admin_opcion == "4":
+                        id_solicitud = input("Ingrese id_solicitud para rechazar: ")
+                        rechazar_solicitud(db, id_solicitud)
+                    elif admin_opcion == "5":
+                        id_solicitud = input("Ingrese id_solicitud para eliminar: ")
+                        eliminar_solicitud(db, id_solicitud)
+                    elif admin_opcion == "6":
+                        contar_solis(db)
+                    elif admin_opcion == "7":
+                        listar_productos_admin(db)
+                    else:
+                        print("Opción inválida")
+
+            #----------------opciones cliente-------------------------
+            elif usuario["rol"] == "cliente":
+                while True:
+                    menu_cliente()
+                    cliente_opcion = input("Elige una opción: ")
+
+                    if cliente_opcion == "0":
+                        break
+                    elif cliente_opcion == "1":
+                        crear_solicitud(db, usuario["correo"])
+                    elif cliente_opcion == "2":
+                        listar_solicitudes_usuario(db, usuario["correo"])
+                    elif cliente_opcion == "3":
+                        listar_productos_usuario(db)
+                    else:
+                        print("Opción inválida")
+
+            else:
+                print("Rol no reconocido")
+
+        elif opcion == "2":
+            registrar_cliente(db)
+
+        elif opcion == "0":
+            print("Cerrando programa")
+            break
+
+        else:
+            print("Opción no válida.")
+
+if __name__ == "__main__":
+    main()
