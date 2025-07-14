@@ -31,6 +31,7 @@ def ver_solicitudes(db, filtro=None, tipos_dano=None):
             mes = input("Ingrese mes y año (YYYY-MM): ")
             filtro = {"fecha": mes}
         elif filtro_opcional == "2":
+            listar_productos_admin(db)
             id_prod = input("Ingrese id_producto: ")
             filtro = {"id_producto": id_prod}
         elif filtro_opcional == "3":
@@ -283,6 +284,122 @@ def ver_clientes_frecuentes(db):
 
     print("\n--- Top 5 Clientes con Más Solicitudes ---")
     print(tabla)
+
+
+def filtro_personalizado(db):
+    from datetime import datetime
+    from prettytable import PrettyTable
+
+    barra_carga("Preparando filtros")
+
+    tipos_dano = {
+        "1": "Fallo eléctrico",
+        "2": "Daño físico",
+        "3": "No enciende",
+        "4": "Mal funcionamiento general",
+        "5": "Pantalla rota",
+        "6": "Problemas de batería",
+        "7": "Sobrecalentamiento",
+        "8": "Problemas de software",
+        "9": "Conectividad fallida",
+        "10": "Ruido anormal",
+        "11": "Fallo mecánico",
+        "12": "Desgaste por uso",
+        "13": "Daño por agua",
+        "14": "Botones dañados",
+        "15": "Problemas de cámara"
+    }
+
+    match_filter = {}
+
+    
+    mes = input("\nIngrese el mes y año (YYYY-MM) o presione enter para omitir: ").strip()
+    dia = input("Ingrese el día (DD) o presione enter para omitir: ").strip()
+
+    if mes:
+        try:
+            fecha_inicio = datetime.strptime(mes, "%Y-%m")
+            if dia:
+                fecha_inicio = datetime.strptime(f"{mes}-{dia}", "%Y-%m-%d")
+                fecha_fin = fecha_inicio.replace(hour=23, minute=59, second=59)
+            else:
+                if fecha_inicio.month == 12:
+                    fecha_fin = datetime(fecha_inicio.year + 1, 1, 1)
+                else:
+                    fecha_fin = datetime(fecha_inicio.year, fecha_inicio.month + 1, 1)
+            match_filter["fecha_solicitud"] = {"$gte": fecha_inicio, "$lt": fecha_fin}
+        except ValueError:
+            print("⚠️ Fecha no válida. Se omitirá el filtro de fecha.")
+
+    
+    print("\n--- Lista de Productos Disponibles ---")
+    listar_productos_admin(db)
+    id_producto = input("Ingrese el ID del producto o presione enter para omitir: ").strip()
+    if id_producto:
+        match_filter["id_producto"] = id_producto
+
+    
+    print("\n--- Tipos de Daño Disponibles ---")
+    for clave, valor in tipos_dano.items():
+        print(f"{clave}. {valor}")
+    tipo_dano_opcion = input("Ingrese número del tipo de daño o presione enter para omitir: ").strip()
+    if tipo_dano_opcion in tipos_dano:
+        match_filter["tipo_dano"] = tipos_dano[tipo_dano_opcion]
+
+    barra_carga("Consultando con filtros personalizados")
+
+    
+    pipeline = []
+    if match_filter:
+        pipeline.append({"$match": match_filter})
+
+    pipeline.append({
+        "$project": {
+            "_id": 0,
+            "id_solicitud": 1,
+            "id_producto": 1,
+            "nombre": 1,
+            "descripcion_fallo": 1,
+            "tipo_dano": 1,
+            "costo_producto": 1,
+            "medio_pago": 1,
+            "estado": 1,
+            "fecha_solicitud": 1
+        }
+    })
+
+    resultados = db["reembolsos"].aggregate(pipeline)
+
+    
+    tabla = PrettyTable()
+    tabla.field_names = [
+        "ID Solicitud", "ID Producto", "Nombre", "Descripción Fallo",
+        "Tipo Daño", "Costo", "Medio Pago", "Estado", "Fecha Solicitud"
+    ]
+
+    encontrados = False
+    for doc in resultados:
+        encontrados = True
+        fecha_str = doc.get("fecha_solicitud")
+        fecha_str = fecha_str.strftime("%Y-%m-%d") if fecha_str else "N/A"
+        tabla.add_row([
+            doc.get("id_solicitud", "N/A"),
+            doc.get("id_producto", "N/A"),
+            doc.get("nombre", "N/A"),
+            doc.get("descripcion_fallo", "N/A"),
+            doc.get("tipo_dano", "N/A"),
+            f"${doc.get('costo_producto', 0)}",
+            doc.get("medio_pago", "N/A"),
+            doc.get("estado", "N/A"),
+            fecha_str
+        ])
+
+    print("\n--- Resultados del Filtro Personalizado ---")
+    if encontrados:
+        print(tabla)
+    else:
+        print("No se encontraron resultados con los filtros seleccionados.")
+
 
 
 def barra_carga(texto="Procesando", pasos=100):

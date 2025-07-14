@@ -14,7 +14,8 @@ def menu_administrador():
     print("6 Contar solicitudes de Reembolsos por Producto")
     print("7 Ver estadisticas por medio de pago")
     print("8 Ver clientes frecuentes")
-    print("9 Ver lista de productos")
+    print("9 Ver solicitudes de reembolso con filtro personalizado")
+    print("10 Ver lista de productos")
     print("0 Salir")
 
 def menu_cliente():

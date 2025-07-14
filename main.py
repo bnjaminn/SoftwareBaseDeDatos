@@ -7,7 +7,7 @@ from tqdm import tqdm
 import time
 from inicio_sesion import iniciar_sesion, registrar_cliente
 from menu import menu_principal, menu_administrador, menu_cliente
-from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis, contar_por_medio_pago, ver_clientes_frecuentes)
+from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis, contar_por_medio_pago, ver_clientes_frecuentes, filtro_personalizado)
 from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, ver_solicitudes_aceptadas)
 
 def main():
@@ -51,6 +51,8 @@ def main():
                     elif admin_opcion == "8":
                         ver_clientes_frecuentes(db)  
                     elif admin_opcion == "9":
+                        filtro_personalizado(db)
+                    elif admin_opcion == "10":
                         listar_productos_admin(db)
                     else:
                         print("Opcion inválida")
