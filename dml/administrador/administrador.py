@@ -149,7 +149,7 @@ def aceptar_solicitud(db, id_solicitud):
     if result.modified_count:
         print(f"Solicitud {id_solicitud} aceptada")
     else:
-        print(f"No se encontró solicitud pendiente con ID {id_solicitud}")
+        print(f"No se encontro solicitud pendiente con ID {id_solicitud}")
 
 
 def rechazar_solicitud(db, id_solicitud):
@@ -167,12 +167,24 @@ def rechazar_solicitud(db, id_solicitud):
 
 def eliminar_solicitud(db, id_solicitud):
     reembolsos = db["reembolsos"]
+    pipeline = [
+        {"$match": {"id_solicitud": id_solicitud}},
+        {"$project": {"_id": 0, "id_solicitud": 1}}
+    ]
+    resultado = list(reembolsos.aggregate(pipeline))
+
+    if not resultado:
+        print(f"No se encontro solicitud con ID {id_solicitud}")
+        return
+
     barra_carga(f"Eliminando solicitud {id_solicitud}")
+
     result = reembolsos.delete_one({"id_solicitud": id_solicitud})
+
     if result.deleted_count:
         print(f"Solicitud {id_solicitud} eliminada")
     else:
-        print(f"No se encontró solicitud con ID {id_solicitud}")
+        print(f"No se pudo eliminar la solicitud con ID {id_solicitud}")
 
 
 def listar_productos_admin(db):  # --tabla para ver los productos D:
@@ -287,8 +299,6 @@ def ver_clientes_frecuentes(db):
 
 
 def filtro_personalizado(db):
-    from datetime import datetime
-    from prettytable import PrettyTable
 
     barra_carga("Preparando filtros")
 
@@ -329,7 +339,7 @@ def filtro_personalizado(db):
                     fecha_fin = datetime(fecha_inicio.year, fecha_inicio.month + 1, 1)
             match_filter["fecha_solicitud"] = {"$gte": fecha_inicio, "$lt": fecha_fin}
         except ValueError:
-            print("⚠️ Fecha no válida. Se omitirá el filtro de fecha.")
+            print("Fecha no válida se omitira el filtro de fecha")
 
     
     print("\n--- Lista de Productos Disponibles ---")
@@ -342,7 +352,7 @@ def filtro_personalizado(db):
     print("\n--- Tipos de Daño Disponibles ---")
     for clave, valor in tipos_dano.items():
         print(f"{clave}. {valor}")
-    tipo_dano_opcion = input("Ingrese número del tipo de daño o presione enter para omitir: ").strip()
+    tipo_dano_opcion = input("Ingrese nmero del tipo de daño o presione enter para omitir: ").strip()
     if tipo_dano_opcion in tipos_dano:
         match_filter["tipo_dano"] = tipos_dano[tipo_dano_opcion]
 
@@ -398,7 +408,115 @@ def filtro_personalizado(db):
     if encontrados:
         print(tabla)
     else:
-        print("No se encontraron resultados con los filtros seleccionados.")
+        print("No se encontraron resultados con los filtros seleccionados")
+
+def eliminar_usuario(db):
+    correo = input("Ingrese el correo del usuario que desea eliminar: ").strip()
+    usuarios = db["usuarios"]
+
+    pipeline = [
+        {
+            "$match": {"correo": correo}
+        },
+        {
+            "$project": {"_id": 0, "correo": 1}
+        }
+    ]
+
+    resultado = list(usuarios.aggregate(pipeline))
+
+    if not resultado:
+        print("No se encontro un usuario con ese correo")
+        return
+
+    barra_carga("Eliminando usuario...")
+
+    result = usuarios.delete_one({"correo": correo})
+
+    if result.deleted_count:
+        print(f"Usuario con correo {correo} eliminado correctamente")
+    else:
+        print("No se pudo eliminar el usuario")
+
+def agregar_producto(db):
+    productos = db["productos"]
+
+    id_producto = input("Ingrese ID del nuevo producto: ").strip()
+    existente = list(productos.aggregate([
+        {"$match": {"id_producto": id_producto}},
+        {"$project": {"_id": 0, "id_producto": 1}}
+    ]))
+
+    if existente:
+        print(f"Ya existe un producto con ID '{id_producto}' No se puede agregar")
+        return
+
+    nombre = input("Ingrese nombre del producto: ").strip()
+    descripcion = input("Ingrese descripcion del producto: ").strip()
+
+    while True:
+        try:
+            precio = float(input("Ingrese precio del producto: ").strip())
+            if precio < 0:
+                print("El precio no puede ser negativo")
+                continue
+            break
+        except ValueError:
+            print("Ingrese un numero válido para el precio")
+
+    nuevo_producto = {
+        "id_producto": id_producto,
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "precio": precio
+    }
+
+    productos.insert_one(nuevo_producto)
+    print(f"Producto '{nombre}' agregado correctamente")
+
+def actualizar_producto(db):
+    productos = db["productos"]
+    id_producto = input("Ingrese el ID del producto a actualizar: ").strip()
+    pipeline = [
+        {"$match": {"id_producto": id_producto}},
+        {"$limit": 1},
+        {"$project": {"_id": 0, "id_producto":1, "nombre":1, "descripcion":1, "precio":1}}
+    ]
+    resultado = list(productos.aggregate(pipeline))
+
+    if not resultado:
+        print(f"No existe producto con ID '{id_producto}'")
+        return
+
+    producto_actual = resultado[0]
+
+    print("Presione enter para no modificar el campo")
+
+    nuevo_nombre = input(f"Nuevo nombre [{producto_actual.get('nombre', '')}]: ").strip()
+    nueva_descripcion = input(f"Nueva descripción [{producto_actual.get('descripcion', '')}]: ").strip()
+    nuevo_precio = input(f"Nuevo precio [{producto_actual.get('precio', '')}]: ").strip()
+
+    actualizacion = {}
+    if nuevo_nombre:
+        actualizacion["nombre"] = nuevo_nombre
+    if nueva_descripcion:
+        actualizacion["descripcion"] = nueva_descripcion
+    if nuevo_precio:
+        try:
+            actualizacion["precio"] = float(nuevo_precio)
+        except ValueError:
+            print("Precio inválido, no se actualizara ese campo")
+
+    if not actualizacion:
+        print("No se modific ningún campo")
+        return
+
+    resultado = productos.update_one({"id_producto": id_producto}, {"$set": actualizacion})
+
+    if resultado.modified_count > 0:
+        print("Producto actualizado con exito")
+    else:
+        print("No se realizo ninguna actualizacion")
 
 
 
@@ -406,3 +524,4 @@ def barra_carga(texto="Procesando", pasos=100):
     tiempo_sleep = 2 / pasos
     for _ in tqdm(range(pasos), desc=texto, ncols=70, bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}'):
         time.sleep(tiempo_sleep)
+

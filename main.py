@@ -7,8 +7,8 @@ from tqdm import tqdm
 import time
 from inicio_sesion import iniciar_sesion, registrar_cliente
 from menu import menu_principal, menu_administrador, menu_cliente
-from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis, contar_por_medio_pago, ver_clientes_frecuentes, filtro_personalizado)
-from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, ver_solicitudes_aceptadas)
+from dml.administrador.administrador import (listar_usuarios, ver_solicitudes, aceptar_solicitud,  rechazar_solicitud, eliminar_solicitud, listar_productos_admin, contar_solis, contar_por_medio_pago, ver_clientes_frecuentes, filtro_personalizado, eliminar_usuario, agregar_producto, actualizar_producto)
+from dml.usuario.usuario import (crear_solicitud, listar_solicitudes_usuario, ver_solicitudes_aceptadas, eliminar_solicitud_usuario)
 
 def main():
     db = obtener_conexion()
@@ -53,9 +53,15 @@ def main():
                     elif admin_opcion == "9":
                         filtro_personalizado(db)
                     elif admin_opcion == "10":
+                        eliminar_usuario(db)
+                    elif admin_opcion == "11":
                         listar_productos_admin(db)
+                    elif admin_opcion == "12":
+                        agregar_producto(db)
+                    elif admin_opcion == "13":
+                        actualizar_producto(db)
                     else:
-                        print("Opcion inválida")
+                        print("Opcion invalida")
 
             #----------------opciones cliente-------------------------
             elif usuario["rol"] == "cliente":
@@ -71,8 +77,10 @@ def main():
                         listar_solicitudes_usuario(db, usuario["correo"])
                     elif cliente_opcion == "3":
                         ver_solicitudes_aceptadas(db, usuario["correo"])
+                    elif cliente_opcion == "4":
+                        eliminar_solicitud_usuario(db, usuario["correo"])
                     else:
-                        print("Opcion inválida")
+                        print("Opcion invalida")
 
             else:
                 print("Rol no reconocido")

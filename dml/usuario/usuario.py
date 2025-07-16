@@ -61,7 +61,7 @@ def crear_solicitud(db, correo_usuario):
             tipo_dano = tipos_dano[opcion]
             break
         else:
-            print("Opción inválida. Intente nuevamente.")
+            print("Opcion inválida intente nuevamente")
 
     opciones_pago = {"EFECTIVO", "DEBITO", "CREDITO"}
     while True:
@@ -69,7 +69,7 @@ def crear_solicitud(db, correo_usuario):
         if medio_pago in opciones_pago:
             break
         else:
-            print("Opción inválida. Debe ser EFECTIVO, DEBITO o CREDITO")
+            print("Opcion invalida debe ser EFECTIVO, DEBITO o CREDITO")
 
     costo_producto = producto.get("precio", 0)
     fecha_solicitud = datetime.now()
@@ -215,6 +215,47 @@ def ver_solicitudes_aceptadas(db, correo_usuario):  # --tabla para ver las solis
     else:
         print("No tienes solicitudes aceptadas aun")
 
+def eliminar_solicitud_usuario(db, correo_usuario):
+    id_solicitud = input("Ingrese el ID de la solicitud que desea eliminar: ").strip()
+    reembolsos = db["reembolsos"]
+
+ 
+    pipeline = [
+        {
+            "$match": {
+                "id_solicitud": id_solicitud,
+                "correo_usuario": correo_usuario
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "estado": 1
+            }
+        }
+    ]
+    resultado = list(reembolsos.aggregate(pipeline))
+
+    if not resultado:
+        print("No se encontro una solicitud con ese ID para tu usuario")
+        return
+
+    estado = resultado[0]["estado"]
+    if estado == "aceptado":
+        print("No puedes eliminar una solicitud que ya fue aceptada")
+        return
+
+    barra_carga("Eliminando solicitud...")
+
+    result = reembolsos.delete_one({
+        "id_solicitud": id_solicitud,
+        "correo_usuario": correo_usuario
+    })
+
+    if result.deleted_count:
+        print(f"Solicitud {id_solicitud} eliminada exitosamente")
+    else:
+        print("Ocurrio un error al intentar eliminar la solicitud")
 
 
 

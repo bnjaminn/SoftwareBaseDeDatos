@@ -6,7 +6,7 @@ def menu_principal():
 
 def menu_administrador():
     print("\n--- Menu Administrador ---")
-    print("1 Ver usuarios normales")
+    print("1 Ver usuarios")
     print("2 Ver solicitudes de reembolso")
     print("3 Aceptar solicitud")
     print("4 Rechazar solicitud")
@@ -15,7 +15,10 @@ def menu_administrador():
     print("7 Ver estadisticas por medio de pago")
     print("8 Ver clientes frecuentes")
     print("9 Ver solicitudes de reembolso con filtro personalizado")
-    print("10 Ver lista de productos")
+    print("10 Eliminar usuario")
+    print("11 Ver lista de productos")
+    print("12 Agregar nuevo producto")
+    print("13 Actualizar producto")
     print("0 Salir")
 
 def menu_cliente():
@@ -23,4 +26,5 @@ def menu_cliente():
     print("1 Crear solicitud de reembolso")
     print("2 Ver tus solicitudes")
     print("3 Ver tus solicitudes aprobadas")
+    print("4 Eliminar solicitud")
     print("0 Salir")
