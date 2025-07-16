@@ -1,5 +1,6 @@
 #Integrantes: Benjamin Bravo, Carolina Olguin
 #Carrera: Analista Programador
+#usuarios: cuenta administrador: correo: admin@amdin contraseña: admin123 usuario normal: dex@dex contraseña: dex
 #Depedencias a instalar (IMPORTANTE INSTALAR POR FAVOR INSTALAR PARA CORRECTO FUNCIONAMIENTO): pip install pymongo, pip install prettytable, pip install tqdm
 from conexion import obtener_conexion
 from prettytable import PrettyTable
